@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Geolocation Watch</title>
+</head>
+<body>
+  <h1>Real-Time Geofence Checker</h1>
+  <p id="status">Waiting for location updates...</p>
+
+  <script>
+    function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371e3; // Earth radius in meters
+      const toRad = x => x * Math.PI / 180;
+
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) ** 2;
+
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    const allowedLat = 14.5995; // Center of geofence (Manila)
+    const allowedLng = 120.9842;
+    const allowedRadius = 1000; // meters
+    const statusElement = document.getElementById("status");
+
+    if ("geolocation" in navigator) {
+      navigator.geolocation.watchPosition(
+        function(position) {
+          const userLat = position.coords.latitude;
+          const userLng = position.coords.longitude;
+
+          const distance = getDistanceFromLatLonInMeters(
+            allowedLat, allowedLng, userLat, userLng
+          );
+
+          if (distance <= allowedRadius) {
+            statusElement.textContent = `✅ Inside allowed area (${distance.toFixed(2)} meters from center)`;
+          } else {
+            statusElement.textContent = `❌ Outside allowed area (${distance.toFixed(2)} meters from center)`;
+          }
+
+          console.log("Your coordinates:", userLat, userLng);
+        },
+        function(error) {
+          statusElement.textContent = "Error getting location: " + error.message;
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 1000,
+          timeout: 5000
+        }
+      );
+    } else {
+      statusElement.textContent = "Geolocation is not supported by this browser.";
+    }
+  </script>
+</body>
+</html>
