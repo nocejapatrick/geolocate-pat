@@ -2,15 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Geolocation Watch</title>
+  <title>Geofence Every Second</title>
 </head>
 <body>
-  <h1>Real-Time Geofence Checker</h1>
-  <p id="status">Waiting for location updates...</p>
+  <h1>Geofence Check (Every Second)</h1>
+  <p id="status">Initializing...</p>
+  <p><strong>Latitude:</strong> <span id="lat">--</span></p>
+  <p><strong>Longitude:</strong> <span id="lng">--</span></p>
 
   <script>
     function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-      const R = 6371e3; // Earth radius in meters
+      const R = 6371e3;
       const toRad = x => x * Math.PI / 180;
 
       const dLat = toRad(lat2 - lat1);
@@ -23,41 +25,49 @@
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       return R * c;
     }
-    
-    const allowedLat = 14.519983148012924; // Center of geofence (Manila)
-    const allowedLng = 121.02897012134154;
-    const allowedRadius = 1000; // meters
-    const statusElement = document.getElementById("status");
+
+    const allowedLat = 14.520050658039901;  // Manila
+    const allowedLng = 121.02900230784942;
+    const allowedRadius = 200; // in meters
+
+    const statusEl = document.getElementById("status");
+    const latEl = document.getElementById("lat");
+    const lngEl = document.getElementById("lng");
 
     if ("geolocation" in navigator) {
-      navigator.geolocation.watchPosition(
-        function(position) {
-          const userLat = position.coords.latitude;
-          const userLng = position.coords.longitude;
+      setInterval(() => {
+        navigator.geolocation.getCurrentPosition(
+          function (position) {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
 
-          const distance = getDistanceFromLatLonInMeters(
-            allowedLat, allowedLng, userLat, userLng
-          );
+            const distance = getDistanceFromLatLonInMeters(
+              allowedLat, allowedLng, userLat, userLng
+            );
 
-          if (distance <= allowedRadius) {
-            statusElement.textContent = `✅ Inside allowed area (${distance.toFixed(2)} meters from center)`;
-          } else {
-            statusElement.textContent = `❌ Outside allowed area (${distance.toFixed(2)} meters from center)`;
+            // Update location display
+            latEl.textContent = userLat.toFixed(6);
+            lngEl.textContent = userLng.toFixed(6);
+
+            // Update status
+            if (distance <= allowedRadius) {
+              statusEl.textContent = `✅ Inside area (${distance.toFixed(2)} meters from center)`;
+            } else {
+              statusEl.textContent = `❌ Outside area (${distance.toFixed(2)} meters from center)`;
+            }
+          },
+          function (error) {
+            statusEl.textContent = "Location error: " + error.message;
+          },
+          {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 5000
           }
-
-          console.log("Your coordinates:", userLat, userLng);
-        },
-        function(error) {
-          statusElement.textContent = "Error getting location: " + error.message;
-        },
-        {
-          enableHighAccuracy: true,
-          maximumAge: 1000,
-          timeout: 5000
-        }
-      );
+        );
+      }, 1000); // every 1 second
     } else {
-      statusElement.textContent = "Geolocation is not supported by this browser.";
+      statusEl.textContent = "Geolocation not supported.";
     }
   </script>
 </body>
